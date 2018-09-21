@@ -1,47 +1,69 @@
-# extract name and phone numbers from contact_list.vcf
+# extract name and phone numbers from grouped_contacts.vcf
 
-contact_list_file = open("contact_list.vcf", "r")
-contact_list_vcf = contact_list_file.readlines()
+# todo: reformat phone number uniformally
 
+import os
 
-contact_list = []
-for line in contact_list_vcf:
-    if line.startswith('BEGIN'):
-        new_contact = []
-        same_contact = True
-    if same_contact:
-        new_contact.append(line)
-    if line.startswith('END'):
-        contact_list.append(new_contact)
-        same_contact = False
+def group_contacts(raw_text):
+    """Given raw text froma vcf file, return a list of lists.
+    Inner list of items belonging to a single contact.
+    """
 
-raw_format = []
-for contact in contact_list:
-    contact_dict = {
-        'name': "",
-        'phone': []
-    }
-    for line in contact:
-        if line.startswith('FN'):
-            tag, value = line.strip().split(":")
-            contact_dict['name'] = value
-        if line.startswith("TEL"):
-            tag, *value = line.strip().split(";")
-            if len(value) > 1: value = [value[1]] # patch work to handle off cases
-            contact_dict['phone'] = value
-    raw_format.append(contact_dict)
+    grouped_contacts = []
+    for line in raw_text:
+        if line.startswith('BEGIN'):
+            new_contact = []
+            same_contact = True
+        if same_contact:
+            if line.split(":")[0] not in ['BEGIN', 'VERSION', 'END']:
+                new_contact.append(line.strip())
+        if line.startswith('END'):
+            grouped_contacts.append(new_contact)
+            same_contact = False
+    
+    return grouped_contacts
 
-# i guess the whole script
-# i'll spend time later reformatting the whole thing vcf file
+def get_contacts(vcf_file):
+    """Given a path to a vcf file, return a list
+    of dictionaries of attributes assignable to a contact.
 
-contacts ={}
-for contact in raw_format:
-    try:
-        phones = [p.split(":")[1] for p in contact['phone']]
-        contacts['contact'] = phones
-    except:
-        print(contact)
-        raise
+    e.g
+    [
+        {
+            'name': "john doe",
+            'phone': ['phone-number', 'phone-number']
+        },
+        {
+            'name': "jane doe",
+            'phone': ['phone-number']
+        }
+    ]
+    """
 
-# import pprint
-# pprint.pprint(raw_format[:15])
+    pass
+    if not os.path.exists(vcf_file):
+        raise FileError(f"VCF File does not exist at {vcf_file}.")
+    
+    raw_text = open(vcf_file, "r").readlines()
+    grouped = group_contacts(raw_text)
+
+    contacts = []
+    for group in grouped:
+        # keeping it simple now, i'm only extracting
+        # names and phone numbers
+        contact = {
+            'name': "",
+            'phone': []
+        }
+
+        for line in group:
+            if line.startswith('FN'):
+                contact['name'] = line.split(":")[-1]
+            if line.startswith('TEL'):
+                contact['phone'].append(line.split(":")[-1])
+        
+        contacts.append(contact)
+    
+    return contacts
+
+c = get_contacts("contact_list.vcf")
