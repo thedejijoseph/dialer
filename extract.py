@@ -4,6 +4,9 @@
 
 import os
 
+class FileError(Exception):
+    pass
+
 def group_contacts(raw_text):
     """Given raw text froma vcf file, return a list of lists.
     Inner list of items belonging to a single contact.
